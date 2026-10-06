@@ -5,6 +5,7 @@
   <material name="black"><color rgba="0.1 0.1 0.1 1.0"/></material>
   <material name="red"><color rgba="0.8 0.1 0.1 1.0"/></material>
 
+  <!-- Base Footprint -->
   <link name="base_footprint"/>
 
   <joint name="base_joint" type="fixed">
@@ -13,6 +14,7 @@
     <origin xyz="0 0 0.1" rpy="0 0 0"/>
   </joint>
 
+  <!-- Base Link -->
   <link name="base_link">
     <visual>
       <geometry><box size="0.5 0.3 0.15"/></geometry>
@@ -27,6 +29,7 @@
     </inertial>
   </link>
 
+  <!-- Drive Wheels Macro -->
   <xacro:macro name="wheel" params="prefix y_reflect">
     <joint name="${prefix}_wheel_joint" type="continuous">
       <parent link="base_link"/>
@@ -61,6 +64,7 @@
   <xacro:wheel prefix="left" y_reflect="1" />
   <xacro:wheel prefix="right" y_reflect="-1" />
 
+  <!-- Caster Wheel -->
   <joint name="caster_joint" type="fixed">
     <parent link="base_link"/>
     <child link="caster_wheel"/>
@@ -87,53 +91,75 @@
     <material>Gazebo/DarkGrey</material>
   </gazebo>
 
+  <!-- RGB-D Camera Physical Body -->
   <joint name="camera_joint" type="fixed">
     <parent link="base_link"/>
     <child link="camera_link"/>
-    <origin xyz="0.26 0 0.05" rpy="0 0 0"/>
+    <origin xyz="0.25 0 0.15" rpy="0 0 0"/>
   </joint>
 
   <link name="camera_link">
     <visual>
-      <geometry><box size="0.03 0.08 0.03"/></geometry>
+      <geometry>
+        <box size="0.03 0.1 0.03"/>
+      </geometry>
       <material name="red"/>
     </visual>
     <collision>
-      <geometry><box size="0.03 0.08 0.03"/></geometry>
+      <geometry>
+        <box size="0.03 0.1 0.03"/>
+      </geometry>
     </collision>
+    <inertial>
+      <mass value="0.05"/>
+      <inertia ixx="1e-4" ixy="0" ixz="0" iyy="1e-4" iyz="0" izz="1e-4"/>
+    </inertial>
   </link>
 
+  <!-- Optical Frame (Converts ROS body frame to Camera Optical Frame: Z forward, X right, Y down) -->
   <joint name="camera_optical_joint" type="fixed">
     <parent link="camera_link"/>
-    <child link="camera_optical_link"/>
+    <child link="camera_optical_frame"/>
     <origin xyz="0 0 0" rpy="-1.5707963 0 -1.5707963"/>
   </joint>
-  <link name="camera_optical_link"/>
 
+  <link name="camera_optical_frame"/>
+
+  <!-- Gazebo RGB-D Camera Sensor Plugin -->
   <gazebo reference="camera_link">
     <material>Gazebo/Red</material>
-    <sensor type="camera" name="forward_camera">
-      <update_rate>30.0</update_rate>
-      <camera name="head">
-        <horizontal_fov>1.3962634</horizontal_fov>
+    <sensor name="camera" type="depth">
+      <always_on>true</always_on>
+      <update_rate>20.0</update_rate>
+      <camera>
+        <horizontal_fov>1.047198</horizontal_fov>
         <image>
           <width>640</width>
           <height>480</height>
           <format>R8G8B8</format>
         </image>
-        <clip><near>0.05</near><far>100.0</far></clip>
+        <clip>
+          <near>0.05</near>
+          <far>8.0</far>
+        </clip>
       </camera>
       <plugin name="camera_controller" filename="libgazebo_ros_camera.so">
-        <alwaysOn>true</alwaysOn>
-        <updateRate>0.0</updateRate>
-        <cameraName>camera</cameraName>
-        <imageTopicName>image_raw</imageTopicName>
-        <cameraInfoTopicName>camera_info</cameraInfoTopicName>
-        <frame_name>camera_optical_link</frame_name>
+        <ros>
+          <namespace>camera</namespace>
+          <remapping>image_raw:=color/image_raw</remapping>
+          <remapping>camera_info:=color/camera_info</remapping>
+          <remapping>depth/image_raw:=depth/image_raw</remapping>
+          <remapping>depth/camera_info:=depth/camera_info</remapping>
+          <remapping>points:=depth/points</remapping>
+        </ros>
+        <frame_name>camera_optical_frame</frame_name>
+        <min_depth>0.1</min_depth>
+        <max_depth>8.0</max_depth>
       </plugin>
     </sensor>
   </gazebo>
 
+  <!-- Differential Drive Plugin -->
   <gazebo>
     <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
       <update_rate>50</update_rate>

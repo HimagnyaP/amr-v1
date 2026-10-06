@@ -12,3 +12,19 @@ __pycache__/
 *.swp
 *~
 .DS_Store
+
+# Temporary and database files
+*.db
+*.db-shm
+*.db-wal
+/tmp/robot.urdf
+
+# Diagnostic frames and screenshots
+frames_*.gv
+frames_*.pdf
+screenshot-*
+
+# SLAM database artifacts (large binaries)
+maps/*.db
+maps/*.db-shm
+maps/*.db-wal
